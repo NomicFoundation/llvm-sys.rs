@@ -166,6 +166,14 @@ extern "C" {
         ErrorMessage: *mut *mut ::libc::c_char,
         OutMemBuf: *mut LLVMMemoryBufferRef,
     ) -> LLVMBool;
+    pub fn LLVMTargetMachineEmitToMemoryBufferWithDbg(
+        T: LLVMTargetMachineRef,
+        M: LLVMModuleRef,
+        codegen: LLVMCodeGenFileType,
+        ErrorMessage: *mut *mut ::libc::c_char,
+        OutMemBuf: *mut LLVMMemoryBufferRef,
+        DbgMemBuf: *mut LLVMMemoryBufferRef,
+    ) -> LLVMBool;
 
     pub fn LLVMGetDefaultTargetTriple() -> *mut ::libc::c_char;
     /// Normalize a target triple. The result needs to be disposed with LLVMDisposeMessage.
