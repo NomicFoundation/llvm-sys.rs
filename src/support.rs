@@ -21,4 +21,7 @@ extern "C" {
     pub fn LLVMAddSymbol(symbolName: *const ::libc::c_char, symbolValue: *mut ::libc::c_void);
     /// Gets the commit hash of the LLVM framework.
     pub fn LLVMPrintCommitIDTo(Buf: *mut ::libc::c_char);
+    /// Reset every registered command line option to its default value and zero its
+    /// occurrence count, so a following `LLVMParseCommandLineOptions` starts clean.
+    pub fn LLVMResetAllOptionOccurrences();
 }
