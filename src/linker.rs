@@ -26,13 +26,15 @@ extern "C" {
         ImmutableOffsets: *mut *mut u64,
     ) -> u64;
 
-    /// Links all EVM dependencies with the main module.
+    /// Links all EVM dependencies with the main module, appending `Metadata` to the code.
     /// All input buffers must be valid ELF object files.
     pub fn LLVMAssembleEVM(
         CodeSegment: u64,
         InMemBufs: *const LLVMMemoryBufferRef,
         InMemBufIDs: *const *const ::libc::c_char,
         NumInBufs: u64,
+        Metadata: *const ::libc::c_char,
+        MetadataSize: u64,
         OutMemBuf: *mut LLVMMemoryBufferRef,
         ErrorMessage: *mut *mut ::libc::c_char,
     ) -> LLVMBool;
@@ -74,15 +76,6 @@ extern "C" {
 
     /// Releases the array of linker symbol offsets.
     pub fn LLVMDisposeSymbolOffsetsEVM(SymbolOffsets: *const u64);
-
-    /// Add metadata to the ELF-wrapped module.
-    pub fn LLVMAddMetadata(
-        InMemBuf: LLVMMemoryBufferRef,
-        MetadataPtr: *const ::libc::c_char,
-        MetadataSize: u64,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
 
     /// Dispose the undefined references.
     pub fn LLVMDisposeUndefinedReferences(
