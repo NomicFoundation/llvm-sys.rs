@@ -2,7 +2,6 @@
 
 use super::prelude::*;
 
-use crate::target_machine::LLVMTargetMachineRef;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -26,27 +25,24 @@ extern "C" {
         ImmutableOffsets: *mut *mut u64,
     ) -> u64;
 
-    /// Links all EVM dependencies with the main module.
+    /// Links all EVM dependencies with the main module, appending `Metadata` to the code.
     /// All input buffers must be valid ELF object files.
     pub fn LLVMAssembleEVM(
-        CodeSegment: u64,
         InMemBufs: *const LLVMMemoryBufferRef,
         InMemBufIDs: *const *const ::libc::c_char,
         NumInBufs: u64,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
+        Metadata: *const ::libc::c_char,
+        MetadataSize: u64,
+    ) -> LLVMMemoryBufferRef;
 
     /// Resolves undefined linker symbols in the ELF object file `InMemBuf`.
     /// Returns ELF object file if there remain unresolved linker symbols. Otherwise returns the bytecode.
     pub fn LLVMLinkEVM(
         InMemBuf: LLVMMemoryBufferRef,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
         LinkerSymbolKeys: *const *const ::libc::c_char,
         LinkerSymbolValues: *const ::libc::c_char,
         LinkerSymbolsSize: u64,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
+    ) -> LLVMMemoryBufferRef;
 
     /// Check whether the EVM memory buffer is a valid ELF binary.
     pub fn LLVMIsELFEVM(InMemBuf: LLVMMemoryBufferRef) -> LLVMBool;
@@ -75,17 +71,8 @@ extern "C" {
     /// Releases the array of linker symbol offsets.
     pub fn LLVMDisposeSymbolOffsetsEVM(SymbolOffsets: *const u64);
 
-    /// Add metadata to the ELF-wrapped module.
-    pub fn LLVMAddMetadata(
-        InMemBuf: LLVMMemoryBufferRef,
-        MetadataPtr: *const ::libc::c_char,
-        MetadataSize: u64,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
-
     /// Dispose the undefined references.
-    pub fn LLVMDisposeUndefinedReferences(
+    pub fn LLVMDisposeUndefinedReferencesEVM(
         References: *const *const ::libc::c_char,
         ReferencesSize: u64,
     );
