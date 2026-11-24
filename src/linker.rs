@@ -2,7 +2,6 @@
 
 use super::prelude::*;
 
-use crate::target_machine::LLVMTargetMachineRef;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -10,6 +9,25 @@ pub enum LLVMLinkerMode {
     LLVMLinkerDestroySource = 0,
     #[deprecated(since = "37.0.0", note = "LLVMLinkerPreserveSource has no effect")]
     LLVMLinkerPreserveSource_Removed = 1,
+}
+
+/// A library whose 20-byte address is known.
+#[repr(C)]
+#[derive(Debug)]
+pub struct LLVMEVMLibrarySymbol {
+    pub name: *const ::libc::c_char,
+    pub value: [::libc::c_char; 20],
+}
+
+/// Everything `LLVMAssembleEVM` produces.
+#[repr(C)]
+#[derive(Debug)]
+pub struct LLVMEVMAssembleResult {
+    pub bytecode: LLVMMemoryBufferRef,
+    pub elf_object: LLVMMemoryBufferRef,
+    pub unresolved_names: *mut *mut ::libc::c_char,
+    pub unresolved_offsets: *mut u64,
+    pub num_unresolved: u64,
 }
 
 extern "C" {
@@ -26,30 +44,25 @@ extern "C" {
         ImmutableOffsets: *mut *mut u64,
     ) -> u64;
 
-    /// Links all EVM dependencies with the main module.
-    /// All input buffers must be valid ELF object files.
+    /// Assembles the EVM dependencies with the main module, appending
+    /// `Metadata` to the code and resolving the library addresses given in
+    /// `LibrarySymbols`. Fills `Result` with the bytecode, the relocatable
+    /// ELF object when `EmitElfObject` is set, and one (name, offset) pair per
+    /// library reference left unresolved and zero-filled. Returns the result
+    /// by value.
     pub fn LLVMAssembleEVM(
-        CodeSegment: u64,
         InMemBufs: *const LLVMMemoryBufferRef,
         InMemBufIDs: *const *const ::libc::c_char,
         NumInBufs: u64,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
+        Metadata: *const ::libc::c_char,
+        MetadataSize: u64,
+        LibrarySymbols: *const LLVMEVMLibrarySymbol,
+        NumLibrarySymbols: u64,
+        EmitElfObject: LLVMBool,
+    ) -> LLVMEVMAssembleResult;
 
-    /// Resolves undefined linker symbols in the ELF object file `InMemBuf`.
-    /// Returns ELF object file if there remain unresolved linker symbols. Otherwise returns the bytecode.
-    pub fn LLVMLinkEVM(
-        InMemBuf: LLVMMemoryBufferRef,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        LinkerSymbolKeys: *const *const ::libc::c_char,
-        LinkerSymbolValues: *const ::libc::c_char,
-        LinkerSymbolsSize: u64,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
-
-    /// Check whether the EVM memory buffer is a valid ELF binary.
-    pub fn LLVMIsELFEVM(InMemBuf: LLVMMemoryBufferRef) -> LLVMBool;
+    /// Releases every field of `Result` that is not null.
+    pub fn LLVMDisposeAssembleResultEVM(Result: *mut LLVMEVMAssembleResult);
 
     /// Dispose immutable names and their offsets returned by LLVMGetImmutablesEVM.
     pub fn LLVMDisposeImmutablesEVM(
@@ -58,35 +71,4 @@ extern "C" {
         NumOfImmutables: u64,
     );
 
-    /// Return undefined references from an EVM ELF object.
-    pub fn LLVMGetUndefinedReferencesEVM(
-        InMemBuf: LLVMMemoryBufferRef,
-        LinkerSymbols: *mut *mut *mut ::libc::c_char,
-        LinkerSymbolsSize: *mut u64,
-    );
-
-    /// Returns an array of offsets for the linker symbol relocations of the ELF object file.
-    pub fn LLVMGetSymbolOffsetsEVM(
-        InMemBuf: LLVMMemoryBufferRef,
-        SymbolName: *const ::libc::c_char,
-        SymbolOffsets: *mut *mut u64,
-    ) -> u64;
-
-    /// Releases the array of linker symbol offsets.
-    pub fn LLVMDisposeSymbolOffsetsEVM(SymbolOffsets: *const u64);
-
-    /// Add metadata to the ELF-wrapped module.
-    pub fn LLVMAddMetadata(
-        InMemBuf: LLVMMemoryBufferRef,
-        MetadataPtr: *const ::libc::c_char,
-        MetadataSize: u64,
-        OutMemBuf: *mut LLVMMemoryBufferRef,
-        ErrorMessage: *mut *mut ::libc::c_char,
-    ) -> LLVMBool;
-
-    /// Dispose the undefined references.
-    pub fn LLVMDisposeUndefinedReferences(
-        References: *const *const ::libc::c_char,
-        ReferencesSize: u64,
-    );
 }
