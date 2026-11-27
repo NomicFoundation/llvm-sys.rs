@@ -28,6 +28,13 @@ pub struct LLVMEVMAssembleResult {
     pub unresolved_names: *mut *mut ::libc::c_char,
     pub unresolved_offsets: *mut u64,
     pub num_unresolved: u64,
+    /// The offset of each input's text in `bytecode`, in input order.
+    /// `u64::MAX` marks an input the layout left out.
+    pub input_offsets: *mut u64,
+    /// The number of inputs, equal to the assemble call's buffer count.
+    pub num_inputs: u64,
+    /// The offset of the metadata, which ends `bytecode`.
+    pub metadata_offset: u64,
 }
 
 extern "C" {
